@@ -18,3 +18,7 @@ You may also connect to any other LLM via API Keys, also found under settings. N
 - Clone this repo
 - cd <repo dir>
 - python main.py
+
+  
+
+![OpenFred](http://187.77.27.73:32769/wp-content/uploads/2026/02/OpenFred-1.png)
