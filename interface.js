@@ -4,15 +4,18 @@ createApp({
     data() {
         return {
             sidebarOpen: true,
-            showSpawn: false,   // Explicitly False
-            showSettings: false, // Explicitly False
+            showSpawn: false,    // Force closed
+            showSettings: false, // Force closed
             loading: false,
             activeAgent: 'Main',
             agents: ['Main'],
             messages: [],
             userInput: '',
             newAgent: { name: '', soul: '', boss: 'Main' },
-            settings: { model: 'ollama/gemma3:27b', apiKey: '' }
+            settings: { 
+                model: 'ollama/gemma3:4b', 
+                apiKey: '' 
+            }
         }
     },
     directives: {
@@ -23,11 +26,26 @@ createApp({
             }
         }
     },
-    mounted() {
-        console.log("OpenFred Interface Loaded");
-        this.loadHistory('Main');
+    async mounted() {
+        // Explicitly reset dialog states on mount
+        this.showSpawn = false;
+        this.showSettings = false;
+        
+        console.log("OpenFred initialized. Discovering agents...");
+        await this.refreshAgents();
+        await this.loadHistory(this.activeAgent);
     },
     methods: {
+        async refreshAgents() {
+            try {
+                const res = await fetch('/agents');
+                if (res.ok) {
+                    this.agents = await res.json();
+                }
+            } catch (e) {
+                console.error("Discovery failed", e);
+            }
+        },
         async loadHistory(name) {
             this.activeAgent = name;
             this.loading = true;
@@ -59,14 +77,20 @@ createApp({
         },
         async spawnAgent() {
             if(!this.newAgent.name) return;
-            await fetch('/spawn', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(this.newAgent)
-            });
-            if (!this.agents.includes(this.newAgent.name)) this.agents.push(this.newAgent.name);
-            this.newAgent = { name: '', soul: '', boss: 'Main' };
-            this.showSpawn = false;
+            try {
+                const res = await fetch('/spawn', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(this.newAgent)
+                });
+                if (res.ok) {
+                    await this.refreshAgents();
+                    this.newAgent = { name: '', soul: '', boss: 'Main' };
+                    this.showSpawn = false; // Close the dialog
+                }
+            } catch (e) {
+                alert("Spawn failed.");
+            }
         }
     }
 }).mount('#app');

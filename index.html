@@ -2,24 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenFred | Ace Chief of Staff</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        [v-cloak] { display: none; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        textarea { resize: none; max-height: 200px; }
+        body { background-color: #0f172a; color: #f1f5f9; }
+        #chat-box::-webkit-scrollbar { width: 4px; }
+        #chat-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+    </style>
 </head>
 <body class="font-sans antialiased">
-    <div id="app" class="flex h-screen overflow-hidden">
+    <div id="app" v-cloak class="flex h-screen overflow-hidden">
         
         <aside :class="sidebarOpen ? 'w-72' : 'w-20'" class="bg-slate-950 border-r border-slate-800 flex flex-col transition-all duration-300">
             <div class="p-6 flex items-center justify-between">
-                <h1 v-if="sidebarOpen" class="font-black text-xl tracking-tighter text-blue-500">OPENFRED</h1>
-                <button @click="sidebarOpen = !sidebarOpen" class="p-2 hover:bg-slate-800 rounded-xl text-slate-400">
+                <h1 v-if="sidebarOpen" class="font-black text-xl tracking-tighter text-blue-500 uppercase">OpenFred</h1>
+                <button @click="sidebarOpen = !sidebarOpen" class="p-2 text-slate-400 hover:bg-slate-800 rounded-lg">
                     <span v-if="sidebarOpen">◀</span><span v-else>▶</span>
                 </button>
             </div>
             
             <div v-if="sidebarOpen" class="px-4 flex-1 space-y-8 overflow-y-auto">
-                <button @click="showSpawn = true" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
+                <button @click="showSpawn = true" class="w-full bg-blue-600 hover:bg-blue-500 py-3 rounded-xl font-bold text-white shadow-lg active:scale-95 transition-all text-xs tracking-widest uppercase">
                     + Spawn Agent
                 </button>
                 <nav class="space-y-1">
@@ -27,7 +39,7 @@
                     <div v-for="a in agents" :key="a" @click="loadHistory(a)" 
                          :class="activeAgent === a ? 'bg-blue-600/10 text-blue-400 border-blue-500/40' : 'hover:bg-slate-900/50 border-transparent'"
                          class="p-3 px-4 rounded-xl cursor-pointer transition-all border flex items-center gap-3">
-                        <span class="w-2 h-2 rounded-full" :class="activeAgent === a ? 'bg-blue-400 shadow-[0_0_10px_rgba(96,165,250,0.8)]' : 'bg-slate-700'"></span>
+                        <span class="w-2 h-2 rounded-full" :class="activeAgent === a ? 'bg-blue-400' : 'bg-slate-700'"></span>
                         <span class="font-semibold truncate">{{a}}</span>
                     </div>
                 </nav>
@@ -43,19 +55,21 @@
         <main class="flex-1 flex flex-col relative bg-slate-900">
             <header class="h-20 border-b border-slate-800/60 flex justify-between items-center px-8 bg-slate-900/80 backdrop-blur-xl z-20">
                 <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white">A</div>
-                    <div>
-                        <p class="font-bold text-lg text-slate-100">{{activeAgent}}</p>
-                        <p class="text-[10px] text-green-500 uppercase font-bold tracking-widest">Online</p>
+                    <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center font-black text-white shadow-xl">A</div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-lg tracking-tight text-slate-100">{{activeAgent}}</span>
+                        <span class="text-[10px] text-green-500 uppercase font-bold tracking-widest">Orchestrator Online</span>
                     </div>
                 </div>
-                <div class="px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-[10px] text-slate-500 font-mono">{{settings.model}}</div>
+                <div class="px-3 py-1 bg-slate-950 border border-slate-800 rounded-full text-[10px] font-mono text-slate-500">
+                    {{settings.provider}}://{{settings.modelName}}
+                </div>
             </header>
 
             <div class="flex-1 overflow-y-auto p-8 flex flex-col-reverse scroll-smooth" id="chat-box">
-                <div v-if="loading" class="mb-4 text-blue-500/50 animate-pulse text-[10px] font-black uppercase tracking-widest">Ace is thinking...</div>
+                <div v-if="loading" class="mb-4 text-blue-500/50 animate-pulse text-[10px] font-black uppercase tracking-widest">Ace is processing...</div>
                 <div v-for="(m, index) in messages.slice().reverse()" :key="index" :class="m.role === 'user' ? 'justify-end' : 'justify-start'" class="flex mb-8">
-                    <div :class="m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 border border-slate-700 text-slate-200'" class="max-w-[80%] p-5 px-6 rounded-2xl shadow-2xl whitespace-pre-wrap text-sm leading-relaxed">
+                    <div :class="m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 border border-slate-700 text-slate-200'" class="max-w-[80%] p-5 px-6 rounded-2xl shadow-2xl whitespace-pre-wrap text-sm leading-relaxed ring-1 ring-white/5">
                         {{m.text}}
                     </div>
                 </div>
@@ -63,29 +77,111 @@
 
             <div class="p-8 pt-2">
                 <div class="max-w-4xl mx-auto flex items-end gap-4 bg-slate-950 p-3 rounded-2xl border border-slate-800 focus-within:border-blue-500/50 shadow-2xl">
-                    <textarea v-model="userInput" @keydown.enter.prevent.exact="sendMessage" @keydown.enter.shift.exact="userInput += '\n'" rows="1" placeholder="Direct Ace..." class="flex-1 bg-transparent p-3 outline-none text-slate-200" v-auto-resize></textarea>
-                    <button @click="sendMessage" class="bg-blue-600 hover:bg-blue-500 text-white h-12 px-6 rounded-xl font-bold transition-all">➔</button>
+                    <textarea v-model="userInput" @keydown.enter.prevent.exact="sendMessage" @keydown.enter.shift.exact="userInput += '\n'" rows="1" placeholder="Issue a command..." class="flex-1 bg-transparent p-3 outline-none text-slate-200" v-auto-resize></textarea>
+                    <button @click="sendMessage" class="bg-blue-600 h-12 px-6 rounded-xl font-bold transition shadow-lg active:scale-95 text-white">➔</button>
                 </div>
             </div>
         </main>
 
-        <div v-if="showSpawn || showSettings" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6 z-50">
-            <div class="bg-slate-900 border border-slate-800 p-10 rounded-[2.5rem] w-full max-w-xl shadow-2xl">
-                <div v-if="showSpawn">
-                    <h2 class="text-3xl font-black mb-6">New Agent</h2>
-                    <input v-model="newAgent.name" placeholder="Identifier" class="w-full bg-slate-950 border border-slate-800 p-4 mb-4 rounded-xl text-white outline-none">
-                    <textarea v-model="newAgent.soul" placeholder="Defining Soul..." class="w-full bg-slate-950 border border-slate-800 p-4 mb-8 rounded-xl h-48 text-white outline-none"></textarea>
-                    <div class="flex justify-end gap-6"><button @click="showSpawn = false" class="text-slate-500 font-bold">Discard</button><button @click="spawnAgent" class="bg-blue-600 px-10 py-4 rounded-2xl font-black text-white">SPAWN</button></div>
-                </div>
-                <div v-if="showSettings">
-                    <h2 class="text-3xl font-black mb-8">Settings</h2>
-                    <input v-model="settings.model" class="w-full bg-slate-950 border border-slate-800 p-4 mb-4 rounded-xl text-white font-mono">
-                    <input v-model="settings.apiKey" type="password" class="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl text-white font-mono">
-                    <button @click="showSettings = false" class="w-full bg-blue-600 py-4 rounded-2xl font-black mt-10">SAVE CHANGES</button>
+        <transition name="fade">
+            <div v-if="showSpawn || showSettings" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6 z-50">
+                <div class="bg-slate-900 border border-slate-800 p-10 rounded-[2.5rem] w-full max-w-xl shadow-2xl ring-1 ring-white/10">
+                    
+                    <div v-if="showSpawn">
+                        <h2 class="text-3xl font-black mb-6 text-white tracking-tighter">Spawn New Agent</h2>
+                        <input v-model="newAgent.name" placeholder="Identifier" class="w-full bg-slate-950 border border-slate-800 p-4 mb-4 rounded-xl text-white outline-none focus:border-blue-500">
+                        <textarea v-model="newAgent.soul" placeholder="Instructions/Personality..." class="w-full bg-slate-950 border border-slate-800 p-4 mb-8 rounded-xl h-48 text-white outline-none focus:border-blue-500"></textarea>
+                        <div class="flex justify-end gap-6">
+                            <button @click="showSpawn = false" class="text-slate-500 font-bold hover:text-slate-300">Discard</button>
+                            <button @click="spawnAgent" class="bg-blue-600 px-10 py-4 rounded-2xl font-black text-white active:scale-95 transition">SPAWN</button>
+                        </div>
+                    </div>
+
+                    <div v-if="showSettings">
+                        <h2 class="text-3xl font-black mb-8 text-white tracking-tighter">System Configuration</h2>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="text-[10px] uppercase font-black text-slate-600 ml-1 tracking-widest">Provider</label>
+                                <select v-model="settings.provider" @change="updateDefaultModel" class="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl mt-2 text-white outline-none focus:border-blue-500 appearance-none cursor-pointer">
+                                    <option value="ollama">Ollama (Local)</option>
+                                    <option value="openai">OpenAI</option>
+                                    <option value="anthropic">Anthropic</option>
+                                    <option value="google">Gemini</option>
+                                    <option value="xai">Grok (xAI)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] uppercase font-black text-slate-600 ml-1 tracking-widest">Model Selection</label>
+                                <select v-model="settings.modelName" class="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl mt-2 text-white outline-none focus:border-blue-500 cursor-pointer">
+                                    <option v-for="opt in modelOptions[settings.provider]" :key="opt" :value="opt">{{opt}}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] uppercase font-black text-slate-600 ml-1 tracking-widest">Authentication Secret</label>
+                                <input v-model="settings.apiKey" type="password" placeholder="API Key / Secret..." class="w-full bg-slate-950 border border-slate-800 p-4 rounded-xl mt-2 text-white outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                        <button @click="showSettings = false" class="w-full bg-slate-100 hover:bg-white text-slate-950 py-4 rounded-2xl font-black mt-10 shadow-xl transition active:scale-95 uppercase tracking-tighter">Apply Changes</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        </transition>
     </div>
-    <script src="interface.js"></script>
+
+    <script>
+        const { createApp } = Vue;
+        createApp({
+            data() {
+                return {
+                    sidebarOpen: true, showSpawn: false, showSettings: false, loading: false,
+                    activeAgent: 'Main', agents: ['Main'],
+                    messages: [], userInput: '',
+                    newAgent: { name: '', soul: '', boss: 'Main' },
+                    settings: { provider: 'ollama', modelName: 'gemma3:4b', apiKey: '' },
+                    modelOptions: {
+                        ollama: ['gemma3:4b', 'gemma3:27b', 'qwen3-vl:8b', 'qwen3:30b'],
+                        openai: ['gpt-4o', 'gpt-4o-mini', 'o1-preview'],
+                        anthropic: ['claude-3-5-sonnet-latest', 'claude-3-haiku-20240307'],
+                        google: ['gemini-1.5-pro', 'gemini-1.5-flash'],
+                        xai: ['grok-4-1-fast-reasoning', 'grok-code-fast-1', 'grok-3']
+                    }
+                }
+            },
+            directives: {
+                'auto-resize': { updated(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; } }
+            },
+            async mounted() { await this.refreshAgents(); this.loadHistory('Main'); },
+            methods: {
+                updateDefaultModel() { this.settings.modelName = this.modelOptions[this.settings.provider][0]; },
+                async refreshAgents() { try { const res = await fetch('/agents'); if (res.ok) this.agents = await res.json(); } catch (e) {} },
+                async loadHistory(name) {
+                    this.activeAgent = name; this.loading = true;
+                    try { const res = await fetch(`/history?name=${encodeURIComponent(name)}`); this.messages = res.ok ? await res.json() : []; } catch (e) { this.messages = []; } finally { this.loading = false; }
+                },
+                async sendMessage() {
+                    if(!this.userInput.trim() || this.loading) return;
+                    const text = this.userInput; this.messages.push({ role: 'user', text });
+                    this.userInput = ''; this.loading = true;
+                    
+                    // Route Logic for LiteLLM
+                    let modelPath = this.settings.modelName;
+                    if (this.settings.provider === 'ollama') modelPath = `ollama/${this.settings.modelName}`;
+                    else if (this.settings.provider === 'xai') modelPath = `xai/${this.settings.modelName}`;
+
+                    try {
+                        const url = `/chat?name=${encodeURIComponent(this.activeAgent)}&message=${encodeURIComponent(text)}&model=${modelPath}&api_key=${this.settings.apiKey}`;
+                        const res = await fetch(url, { method: 'POST' });
+                        const data = await res.json();
+                        this.messages.push({ role: 'assistant', text: data.reply });
+                    } catch (e) { this.messages.push({ role: 'assistant', text: "❌ Error: Logic core unreachable." }); } finally { this.loading = false; }
+                },
+                async spawnAgent() {
+                    if(!this.newAgent.name) return;
+                    await fetch('/spawn', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(this.newAgent) });
+                    await this.refreshAgents(); this.showSpawn = false;
+                }
+            }
+        }).mount('#app');
+    </script>
 </body>
 </html>
