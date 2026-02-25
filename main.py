@@ -29,10 +29,10 @@ def save_to_history(agent_name: str, role: str, text: str):
     path = get_safe_path(agent_name, "history.json")
     history = []
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f: # Added UTF-8
             history = json.load(f)
     history.append({"role": role, "text": text})
-    with open(path, "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f: # Added UTF-8
         json.dump(history, f)
 
 def get_stock_price(ticker: str):
@@ -82,7 +82,7 @@ async def list_agents():
 async def get_history(name: str):
     path = get_safe_path(name, "history.json")
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f: # Added UTF-8
             return json.load(f)
     return []
 
