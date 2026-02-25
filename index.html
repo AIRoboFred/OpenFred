@@ -17,6 +17,9 @@
         #chat-box::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
         .fade-enter-active, .fade-leave-active { transition: opacity 0.2s; }
         .fade-enter-from, .fade-leave-to { opacity: 0; }
+        /* Style for the generated links */
+        .message-content a { color: #60a5fa; text-decoration: underline; font-weight: 600; }
+        .message-content a:hover { color: #93c5fd; }
     </style>
 </head>
 <body class="font-sans antialiased">
@@ -69,8 +72,9 @@
             <div class="flex-1 overflow-y-auto p-8 flex flex-col-reverse scroll-smooth" id="chat-box">
                 <div v-if="loading" class="mb-4 text-blue-500/50 animate-pulse text-[10px] font-black uppercase tracking-widest">Ace is processing...</div>
                 <div v-for="(m, index) in messages.slice().reverse()" :key="index" :class="m.role === 'user' ? 'justify-end' : 'justify-start'" class="flex mb-8">
-                    <div :class="m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 border border-slate-700 text-slate-200'" class="max-w-[80%] p-5 px-6 rounded-2xl shadow-2xl whitespace-pre-wrap text-sm leading-relaxed ring-1 ring-white/5">
-                        {{m.text}}
+                    <div :class="m.role === 'user' ? 'bg-blue-600 text-white' : 'bg-slate-800 border border-slate-700 text-slate-200'" 
+                         class="max-w-[80%] p-5 px-6 rounded-2xl shadow-2xl whitespace-pre-wrap text-sm leading-relaxed ring-1 ring-white/5 message-content"
+                         v-html="linkify(m.text)">
                     </div>
                 </div>
             </div>
@@ -157,6 +161,20 @@
                 async loadHistory(name) {
                     this.activeAgent = name; this.loading = true;
                     try { const res = await fetch(`/history?name=${encodeURIComponent(name)}`); this.messages = res.ok ? await res.json() : []; } catch (e) { this.messages = []; } finally { this.loading = false; }
+                },
+                // Added linkify method
+                linkify(text) {
+                    if (!text) return "";
+                    // Basic escape to prevent XSS before adding our own links
+                    const escapedText = text
+                        .replace(/&/g, "&amp;")
+                        .replace(/</g, "&lt;")
+                        .replace(/>/g, "&gt;")
+                        .replace(/"/g, "&quot;")
+                        .replace(/'/g, "&#039;");
+                    
+                    const urlPattern = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig;
+                    return escapedText.replace(urlPattern, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
                 },
                 async sendMessage() {
                     if(!this.userInput.trim() || this.loading) return;
