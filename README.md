@@ -22,3 +22,13 @@ You may also connect to any other LLM via API Keys, also found under settings. N
   
 
 ![OpenFred](http://187.77.27.73:32769/wp-content/uploads/2026/02/OpenFred-1.png)
+
+# Performance
+
+Depending on the hardware, it should theoretically work with a 20b model
+
+So far I've tested it on a M4/16GB MacBook Air with:
+- 4b - works great
+- 8b - decent performance
+
+Above 8b my machine runs out of RAM
