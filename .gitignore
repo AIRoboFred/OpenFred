@@ -2,4 +2,23 @@ venv/
 __pycache__/
 workspace/
 .DS_Store
-*.pyc
+*.pyc 
+
+# build / temp folders
+node_modules/
+dist/
+build/
+target/
+*.log
+*.tmp
+
+# IDE / editor files
+.vscode/
+.idea/
+*.sublime-project
+*.swp
+
+# secrets / env
+.env
+.env.local
+secrets.json
