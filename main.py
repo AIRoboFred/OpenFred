@@ -18,12 +18,18 @@ class AgentRequest(BaseModel):
     memory: str = "Initialized."
 
 def get_safe_path(agent_name: str, filename: str = ""):
-    base = os.path.join(WORKSPACE, agent_name)
+    base = os.path.realpath(os.path.join(WORKSPACE, agent_name))
     os.makedirs(base, exist_ok=True)
-    target = os.path.abspath(os.path.join(base, filename))
-    if not target.startswith(WORKSPACE):
+    target = os.path.realpath(os.path.join(base, filename)) if filename else base
+    if not (target == base or target.startswith(base + os.sep)):
         raise HTTPException(status_code=403, detail="Access Denied")
     return target
+
+def write_agent_file(agent_name: str, filename: str, content: str):
+    path = get_safe_path(agent_name, filename)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(content)
 
 def save_to_history(agent_name: str, role: str, text: str):
     path = get_safe_path(agent_name, "history.json")
@@ -110,7 +116,12 @@ async def chat(name: str, message: str, model: str, api_key: Optional[str] = Non
         "2. To look up a stock price, reply ONLY with: STOCK: [TICKER]\n"
         "3. To look up homes/real estate, reply ONLY with: SEARCH: site:zillow.com [location] homes for sale\n"
         "4. Once you have results, provide a final helpful answer.\n"
-        "5. To save important info to memory, end response with: COMMIT: [info]"
+        "5. To save important info to memory, end response with: COMMIT: [info]\n"
+        "6. To write a file to your folder, include a block in your response:\n"
+        "   WRITE: relative/path/filename.txt\n"
+        "   [file content here]\n"
+        "   END_WRITE\n"
+        "   You may write to subdirectories (e.g. reports/summary.txt). The file will be saved to your workspace folder."
     )
 
     try:
@@ -156,6 +167,19 @@ async def chat(name: str, message: str, model: str, api_key: Optional[str] = Non
                 with open(mem_p, "a", encoding="utf-8") as f:
                     f.write(f"\n- {commit_match.group(1).strip()}")
                 reply = re.sub(r"COMMIT:.*", "*(Memory Updated)*", reply)
+
+        # Handle File Writes
+        for write_match in re.finditer(r"WRITE:\s*(\S+)\n(.*?)END_WRITE", reply, re.DOTALL):
+            filename = write_match.group(1).strip()
+            content = write_match.group(2)
+            try:
+                write_agent_file(name, filename, content)
+                print(f"📝 Agent '{name}' wrote file: {filename}")
+                replacement = f"*(File Saved: {filename})*"
+            except HTTPException:
+                print(f"❌ Agent '{name}' was denied write access to: {filename}")
+                replacement = f"*(Write Denied: {filename} is outside your workspace)*"
+            reply = reply.replace(write_match.group(0), replacement)
 
         save_to_history(name, "assistant", reply)
         return {"reply": reply}
