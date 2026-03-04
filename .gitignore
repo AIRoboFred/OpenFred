@@ -22,3 +22,6 @@ target/
 .env
 .env.local
 secrets.json
+
+# remove Claude
+.Claude/
